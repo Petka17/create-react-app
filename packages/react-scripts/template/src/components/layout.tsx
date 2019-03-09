@@ -1,5 +1,5 @@
 import React from "react";
-import * as auth from "../state/auth";
+import * as auth from "state/auth";
 
 function layout(Component: typeof React.Component | React.FC) {
   return () => (

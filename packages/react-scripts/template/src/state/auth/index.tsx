@@ -1,5 +1,5 @@
 import React from "react";
-import { codeRequest, loginWithCode } from "../../api/auth";
+import { codeRequest, loginWithCode } from "api/auth";
 
 import { initialState, reducer, PHONE_LENGTH, CODE_LENGTH } from "./state";
 

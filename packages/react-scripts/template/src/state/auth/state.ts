@@ -1,5 +1,5 @@
-import { DeepReadOnly, UnreachableError } from "../common";
-import { digitOnly } from "../../utils/string";
+import { DeepReadOnly, UnreachableError } from "state/common";
+import { digitOnly } from "utils/string";
 
 import { Action } from "./action";
 

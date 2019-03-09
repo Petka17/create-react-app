@@ -1,6 +1,6 @@
 import React from "react";
-import layout from "./layout";
-import * as auth from "../state/auth";
+import layout from "components/layout";
+import * as auth from "state/auth";
 
 function SigninPage() {
   const {

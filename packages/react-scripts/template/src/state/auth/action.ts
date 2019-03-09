@@ -1,4 +1,4 @@
-import { BaseAction } from "../common";
+import { BaseAction } from "state/common";
 
 /**
  * Actions
