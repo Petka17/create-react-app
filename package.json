@@ -45,7 +45,7 @@
   },
   "lint-staged": {
     "*.{js,md,css,html}": [
-      "prettier --trailing-comma es5 --single-quote --write",
+      "prettier --write",
       "git add"
     ],
     "yarn.lock": [
