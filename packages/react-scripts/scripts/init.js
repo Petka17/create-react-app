@@ -14,14 +14,12 @@ process.on('unhandledRejection', err => {
   throw err;
 });
 
+const os = require('os');
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('react-dev-utils/chalk');
 const execSync = require('child_process').execSync;
 const spawn = require('react-dev-utils/crossSpawn');
-const { defaultBrowsers } = require('react-dev-utils/browsersHelper');
-const os = require('os');
-const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
 
 function isInGitRepository() {
   try {
@@ -32,20 +30,11 @@ function isInGitRepository() {
   }
 }
 
-function isInMercurialRepository() {
-  try {
-    execSync('hg --cwd . root', { stdio: 'ignore' });
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 function tryGitInit(appPath) {
   let didInit = false;
   try {
     execSync('git --version', { stdio: 'ignore' });
-    if (isInGitRepository() || isInMercurialRepository()) {
+    if (isInGitRepository()) {
       return false;
     }
 
@@ -91,23 +80,19 @@ module.exports = function(
   // Copy over some of the devDependencies
   appPackage.dependencies = appPackage.dependencies || {};
 
-  const useTypeScript = appPackage.dependencies['typescript'] != null;
-
   // Setup the script rules
   appPackage.scripts = {
     start: 'react-scripts start',
     build: 'react-scripts build',
-    test: 'react-scripts test',
-    eject: 'react-scripts eject',
+    test: 'yarn jest --watch',
+    'test:cover': 'yarn jest --coverage',
+    server: 'node server.js',
   };
 
   // Setup the eslint config
   appPackage.eslintConfig = {
     extends: 'react-app',
   };
-
-  // Setup the browsers list
-  appPackage.browserslist = defaultBrowsers;
 
   fs.writeFileSync(
     path.join(appPath, 'package.json'),
@@ -123,9 +108,8 @@ module.exports = function(
   }
 
   // Copy the files for the user
-  const templatePath = template
-    ? path.resolve(originalDirectory, template)
-    : path.join(ownPath, useTypeScript ? 'template-typescript' : 'template');
+  const templatePath = path.join(ownPath, 'template');
+
   if (fs.existsSync(templatePath)) {
     fs.copySync(templatePath, appPath);
   } else {
@@ -154,49 +138,28 @@ module.exports = function(
     }
   }
 
-  let command;
-  let args;
+  const command = 'yarnpkg';
+  let args = ['add'];
 
-  if (useYarn) {
-    command = 'yarnpkg';
-    args = ['add'];
-  } else {
-    command = 'npm';
-    args = ['install', '--save', verbose && '--verbose'].filter(e => e);
-  }
-  args.push('react', 'react-dom');
-
-  // Install additional template dependencies, if present
-  const templateDependenciesPath = path.join(
-    appPath,
-    '.template.dependencies.json'
+  args.push(
+    'react-router-dom',
+    'express',
+    'http-proxy-middleware',
+    '@types/react-router-dom',
+    'jest',
+    '@types/jest',
+    'jest-dom',
+    'ts-jest',
+    'react-testing-library'
   );
-  if (fs.existsSync(templateDependenciesPath)) {
-    const templateDependencies = require(templateDependenciesPath).dependencies;
-    args = args.concat(
-      Object.keys(templateDependencies).map(key => {
-        return `${key}@${templateDependencies[key]}`;
-      })
-    );
-    fs.unlinkSync(templateDependenciesPath);
-  }
 
-  // Install react and react-dom for backward compatibility with old CRA cli
-  // which doesn't install react and react-dom along with react-scripts
-  // or template is presetend (via --internal-testing-template)
-  if (!isReactInstalled(appPackage) || template) {
-    console.log(`Installing react and react-dom using ${command}...`);
-    console.log();
+  console.log(`Installing react and react-dom using ${command}...`);
+  console.log();
 
-    const proc = spawn.sync(command, args, { stdio: 'inherit' });
-    if (proc.status !== 0) {
-      console.error(`\`${command} ${args.join(' ')}\` failed`);
-      return;
-    }
-  }
-
-  if (useTypeScript) {
-    verifyTypeScriptSetup();
+  const proc = spawn.sync(command, args, { stdio: 'inherit' });
+  if (proc.status !== 0) {
+    console.error(`\`${command} ${args.join(' ')}\` failed`);
+    return;
   }
 
   if (tryGitInit(appPath)) {
@@ -215,7 +178,7 @@ module.exports = function(
   }
 
   // Change displayed command to yarn instead of yarnpkg
-  const displayedCommand = useYarn ? 'yarn' : 'npm';
+  const displayedCommand = 'yarn';
 
   console.log();
   console.log(`Success! Created ${appName} at ${appPath}`);
@@ -224,17 +187,13 @@ module.exports = function(
   console.log(chalk.cyan(`  ${displayedCommand} start`));
   console.log('    Starts the development server.');
   console.log();
-  console.log(
-    chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}build`)
-  );
+  console.log(chalk.cyan(`  ${displayedCommand} build`));
   console.log('    Bundles the app into static files for production.');
   console.log();
   console.log(chalk.cyan(`  ${displayedCommand} test`));
   console.log('    Starts the test runner.');
   console.log();
-  console.log(
-    chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}eject`)
-  );
+  console.log(chalk.cyan(`  ${displayedCommand} eject`));
   console.log(
     '    Removes this tool and copies build dependencies, configuration files'
   );
@@ -256,6 +215,12 @@ module.exports = function(
   }
   console.log();
   console.log('Happy hacking!');
+
+  console.log(
+    `it's alive: ${require('../package.json').name}:${
+      require('../package.json').version
+    }`
+  );
 };
 
 function isReactInstalled(appPackage) {
